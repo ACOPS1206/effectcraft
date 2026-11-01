@@ -65,6 +65,8 @@ impl Catalog {
     }
 }
 
+include!("korean_effects.rs");
+
 /// The catalog for `language`; `None` for English (the source of every name, needing no lookup)
 /// and for a language with no table.
 ///
@@ -80,7 +82,9 @@ fn catalog(language: &str) -> Option<&'static Catalog> {
     static GEORGIAN_CATALOG: Catalog = Catalog { rows: GEORGIAN, categories: GEORGIAN_CATEGORIES, index: OnceLock::new() };
     static SWEDISH_CATALOG: Catalog = Catalog { rows: SWEDISH, categories: SWEDISH_CATEGORIES, index: OnceLock::new() };
     static FRENCH_CATALOG: Catalog = Catalog { rows: FRENCH, categories: FRENCH_CATEGORIES, index: OnceLock::new() };
+    static KOREAN_CATALOG: Catalog = Catalog { rows: KOREAN, categories: KOREAN_CATEGORIES, index: OnceLock::new() };
     match language {
+        "ko" => Some(&KOREAN_CATALOG),
         "zh-hans" => Some(&SIMPLIFIED),
         "zh-hant" => Some(&TRADITIONAL),
         // Japanese: the slot the Japanese data point on #821 asked for, so both languages share
@@ -1876,6 +1880,19 @@ mod tests {
     /// Every row names an effect in the registry and still carries its English name, so a rename
     /// or a removal fails here rather than attaching a translation to a different effect.
     #[test]
+    fn korean_effects_preserve_search_and_user_group_names() {
+        set_current("ko");
+        assert_eq!(name("ec.blur.gaussian", "Gaussian Blur"), "가우시안 흐림");
+        assert_eq!(group("ec.blur.gaussian", "Gaussian Blur 2"), "가우시안 흐림 2");
+        assert_eq!(group("ec.blur.gaussian", "My Blur"), "My Blur");
+        assert_eq!(category("Blur & Sharpen"), "흐림 및 선명");
+        assert!(matches("ec.blur.gaussian", "Gaussian Blur", "가우시안"));
+        assert!(matches("ec.blur.gaussian", "Gaussian Blur", "gaussian"));
+        assert_eq!(KOREAN.len(), effects::registry().len());
+        set_current("en");
+    }
+
+    #[test]
     fn every_row_names_a_registry_effect() {
         let registry = effects::registry();
         for (id, english, translated) in SIMPLIFIED_CHINESE {
@@ -1902,7 +1919,7 @@ mod tests {
     const PENDING: &[(&str, &[Row])] = &[("zh-hant", TRADITIONAL_CHINESE)];
 
     /// The languages whose tables are being filled in: guarded like [`PENDING`] row by row.
-    const PARTIAL: &[(&str, &[Row])] = &[("ja", JAPANESE_EFFECTS), ("ka", GEORGIAN), ("sv", SWEDISH), ("fr", FRENCH)];
+    const PARTIAL: &[(&str, &[Row])] = &[("ja", JAPANESE_EFFECTS), ("ka", GEORGIAN), ("sv", SWEDISH), ("fr", FRENCH), ("ko", KOREAN)];
 
     /// A pending language may lag Simplified Chinese but may not invent ids or disagree about
     /// which effect an id names: a translator fills these tables row by row. While they are
@@ -1938,6 +1955,7 @@ mod tests {
             ("ka", GEORGIAN_CATEGORIES),
             ("sv", SWEDISH_CATEGORIES),
             ("fr", FRENCH_CATEGORIES),
+            ("ko", KOREAN_CATEGORIES),
         ] {
             for (english, translated) in rows {
                 assert!(categories.contains(english), "{language} lists {english}, which is not a category");

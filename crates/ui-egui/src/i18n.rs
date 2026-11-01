@@ -9,13 +9,14 @@ use crate::EffectcraftApp;
 pub(crate) mod effects;
 /// Translations for the panels, tooltips and dialogs below the menu bar (see the module docs).
 pub(crate) mod ui;
+include!("i18n/korean_menus.rs");
 use effectcraft_engine::menus::{MenuEntry, MenuNode};
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use ui::catalog_characters;
 pub(crate) use ui::{set_current, tr, tr_args};
 
 /// Every language with a catalog, in the order Settings ▸ General ▸ Language lists them.
-const CATALOG_CODES: [&str; 13] = ["cs", "de", "es", "fr", "pl", "pt-br", "sv", "ru", "uk", "ka", "ja", "zh-hans", "zh-hant"];
+const CATALOG_CODES: [&str; 14] = ["cs", "de", "es", "fr", "pl", "pt-br", "sv", "ru", "uk", "ka", "ja", "zh-hans", "zh-hant", "ko"];
 
 /// The active interface language: the stored preference when it names a catalog, otherwise `en`
 /// (English is the source of every label and needs no lookup).
@@ -128,7 +129,7 @@ fn first_supported(requested: Option<&str>, browser: &[String], drawable: impl F
 /// rather than draw boxes; `?lang=` and a language chosen in Settings still select them.
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 fn web_draws(language: &str) -> bool {
-    !matches!(language, "ja" | "zh-hans" | "zh-hant" | "ka")
+    !matches!(language, "ja" | "zh-hans" | "zh-hant" | "ka" | "ko")
 }
 
 /// The language EffectCraft shows for a BCP 47 locale (`ja-JP` → `ja`, `zh-Hans-CN` → `zh-hans`,
@@ -141,6 +142,7 @@ fn supported(locale: Option<&str>) -> &'static str {
     let rest: Vec<String> = parts.map(|p| p.to_ascii_lowercase()).collect();
     match primary.as_str() {
         "ja" => "ja",
+        "ko" => "ko",
         "uk" => "uk",
         "es" => "es",
         "cs" => "cs",
@@ -164,6 +166,7 @@ fn supported(locale: Option<&str>) -> &'static str {
 /// language code: the platform names the file manager before the catalog sees the label, so the
 /// macOS row alone leaves the other two in English (#1450).
 const REVEAL_FINDER: &[(&str, &str, &str)] = &[
+    ("ko", "탐색기에서 보기", "파일 관리자에서 보기"),
     ("uk", "Показати у Провіднику", "Показати у файловому менеджері"),
     ("de", "Im Explorer anzeigen", "Im Dateimanager anzeigen"),
     ("cs", "Zobrazit v Průzkumníku", "Zobrazit ve správci souborů"),
@@ -208,6 +211,7 @@ pub(crate) fn label<'a>(app: &EffectcraftApp, command: &str, source: &'a str) ->
 /// The menu catalog for `language`; `None` for English.
 fn menu_catalog(language: &str) -> Option<&'static [(&'static str, &'static str, &'static str)]> {
     Some(match language {
+        "ko" => KOREAN,
         "ja" => JAPANESE,
         "zh-hans" => SIMPLIFIED_CHINESE,
         "zh-hant" => TRADITIONAL_CHINESE,
@@ -283,6 +287,7 @@ pub(crate) fn entry(app: &EffectcraftApp, e: &MenuEntry, shown: String) -> Strin
     // the rest of its menu still goes through the catalog below (#1449).
     let history = match language(app) {
         "en" => return shown,
+        "ko" => Some(("실행 취소:", "실행 취소할 작업 없음", "다시 실행:", "다시 실행할 작업 없음")),
         "ja" => Some(("取り消し", "取り消しできません", "やり直し", "やり直しできません")),
         "zh-hans" => Some(("撤销", "无可撤销的操作", "重做", "无可重做的操作")),
         "zh-hant" => Some(("復原", "沒有可復原的操作", "重做", "沒有可重做的操作")),
@@ -371,6 +376,17 @@ pub(crate) fn submenu(app: &EffectcraftApp, source: &str, shown: String) -> Stri
                 && let Some(name) = shown.strip_prefix("Assign Shortcut to “").and_then(|s| s.strip_suffix('”'))
             {
                 return format!("Призначити скорочення для вигляду 3D «{name}»");
+            }
+        }
+        "ko" => {
+            if source == "Assign Shortcut to Workspace" {
+                if let Some(name) = shown.strip_prefix("Assign Shortcut to “").and_then(|s| s.strip_suffix("” Workspace")) {
+                    return format!("작업 영역 ‘{name}’에 단축키 할당");
+                }
+            } else if source == "Assign Shortcut to 3D View"
+                && let Some(name) = shown.strip_prefix("Assign Shortcut to “").and_then(|s| s.strip_suffix('”'))
+            {
+                return format!("3D 뷰 ‘{name}’에 단축키 할당");
             }
         }
         "ja" => {
@@ -8750,6 +8766,29 @@ mod tests {
     /// The four options at the foot of the header's workspace menu say what After Effects says,
     /// read from its workspace button on 2026-10-31: reset, save over this one, save a copy, then
     /// edit the list.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn korean_locale_menus_and_user_names() {
+        for locale in ["ko", "ko-KR", "ko_KR.UTF-8", "KO-kr"] {
+            assert_eq!(supported(Some(locale)), "ko");
+        }
+        assert!(!web_draws("ko"), "web has no bundled Korean font");
+        let mut app = EffectcraftApp::new(effectcraft_engine::Session::default());
+        app.session.execute("prefs.set", json!({"key": "general.language", "value": "ko"})).unwrap();
+        assert_eq!(language(&app), "ko");
+        assert_eq!(label(&app, "comp.new", "New Composition..."), "새 컴포지션...");
+        assert_eq!(label(&app, "file.revealInFinder", "Reveal in Explorer"), "탐색기에서 보기");
+        assert_eq!(label(&app, "layer.revealInFinder", "Reveal in File Manager"), "파일 관리자에서 보기");
+        assert_eq!(submenu(&app, "Assign Shortcut to Workspace", "Assign Shortcut to “My Work” Workspace".into()), "작업 영역 ‘My Work’에 단축키 할당");
+        ui::set_current("ko");
+        assert_eq!(tr("Light"), "라이트");
+        assert_eq!(tr("Composition Name:"), "컴포지션 이름:");
+        assert_eq!(tr_args("Output file: {}", &[&"File.mp4"]), "출력 파일: File.mp4");
+        assert_eq!(tr("File.mp4"), "File.mp4");
+        assert!(ui::catalog_characters("ko").contains(&'한'));
+        ui::set_current("en");
+    }
+
     #[test]
     fn the_workspace_menu_options_use_after_effects_words() {
         set_current("ja");
@@ -9153,6 +9192,7 @@ mod tests {
             ("pl", POLISH),
             ("ka", GEORGIAN),
             ("sv", SWEDISH),
+            ("ko", KOREAN),
         ] {
             for (command, en, translated) in catalog {
                 assert_eq!(en.contains("..."), translated.contains("..."), "{code} {command} / {en}: {translated}");

@@ -477,7 +477,7 @@ fn install_script_fallbacks(family_fonts: &mut FontDefinitions, language: &str) 
         let mut seen = Vec::new();
         // A font covering one Han probe may be a sparse subset. Register additional faces
         // needed by the actual interface catalog instead of assuming whole-script coverage.
-        let extra = if is_chinese(language) { crate::i18n::catalog_characters(language) } else { Vec::new() };
+        let extra = if is_chinese(language) || language == "ko" { crate::i18n::catalog_characters(language) } else { Vec::new() };
         let extra: Vec<_> = extra.into_iter().filter(|ch| *ch >= '\u{2e80}').map(|ch| (ch, "catalog-system")).collect();
         // 256-character blocks where a catalog character found no face: with nothing installed
         // covering them, each lookup would read every installed font file again.
@@ -544,6 +544,7 @@ fn interface_fallback_candidates(name: &str, language: &str) -> &'static [&'stat
         ("japanese-system", _) | ("chinese-system", "ja") => &["Meiryo UI", "Yu Gothic UI", "MS UI Gothic"],
         ("chinese-system", "zh-hant") => &["Microsoft JhengHei UI", "PMingLiU"],
         ("chinese-system", "zh-hans") => &["Microsoft YaHei UI"],
+        ("korean-system", _) => &["Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", "Noto Sans KR"],
         // The other scripts have no UI variant, and their shared order already picks the face made
         // for the script - the one that draws it correctly at all.
         _ => &[],

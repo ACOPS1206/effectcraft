@@ -85,7 +85,7 @@ counted, so the true percentages are slightly lower.
 | Indonesian | `id` | 0 | — | Latin, fine | no | none (After Effects: none) | 8–12 h + review |
 | Japanese | `ja` | 1,923 (≈ 46%): menus 630 rows, panels 996, effect names 297 | Panels and dialogs partly; no help, effect names translated for 297 of the 307 ids and their parameter names not; Home screen literals unwrapped (#574, closed) | Japanese system fallback; vertical text and Tate-Chu-Yoko in text layers; IME | no | partial | 6–9 h + review |
 | German | `de` | 624 (≈ 16%) | Menus only (open PR #666 adds interface translations) | Latin, fine | no | menus only | 7–10 h + review |
-| Korean | `ko` | 0 | — | Hangul fallback probe added (#599, closed); not checked on macOS here | no | none | 9–13 h + review |
+| Korean | `ko` | 2,127 catalog rows: menus 632, panels 1,187, effect names 308; plus 21 effect categories | Existing catalog UI translated; effect parameters, engine messages and tutorial bodies remain English | System Hangul fallback; explicit Korean font candidates; browser has no bundled Korean font | no | partial; Rust i18n tests pass; macOS UI review pending | See [localization-ko.md](localization-ko.md) |
 | Vietnamese | `vi` | 0 | — | Latin with stacked diacritics; untested | no | none (After Effects: none) | 8–12 h + review |
 
 Other languages EffectCraft ships (6):

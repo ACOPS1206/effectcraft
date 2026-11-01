@@ -22,7 +22,7 @@ use std::fmt::Display;
 use std::sync::OnceLock;
 
 thread_local! {
-    /// The resolved interface language ("en", "ja", "zh-hans", "zh-hant", "uk", "pt-br", "cs", "es", "pl", "ka", "sv", "fr"); "en" until the first
+    /// The resolved interface language ("en", "ja", "zh-hans", "zh-hant", "uk", "pt-br", "cs", "es", "pl", "ka", "sv", "fr", "ko"); "en" until the first
     /// frame sets it.
     static CURRENT: Cell<&'static str> = const { Cell::new("en") };
 }
@@ -37,6 +37,8 @@ pub(crate) fn set_current(language: &'static str) {
 pub(crate) fn current() -> &'static str {
     CURRENT.with(Cell::get)
 }
+
+include!("korean_ui.rs");
 
 type Index = HashMap<&'static str, &'static str>;
 
@@ -55,6 +57,7 @@ const ROWS: &[(&str, &[(&str, &str)])] = &[
     ("ka", GEORGIAN_PANELS),
     ("sv", SWEDISH),
     ("fr", FRENCH),
+    ("ko", KOREAN),
 ];
 
 /// The catalog for `language`, indexed by English source (built on first use: panels translate
@@ -71,6 +74,7 @@ fn catalog(language: &str) -> Option<&'static Index> {
     static KA: OnceLock<Index> = OnceLock::new();
     static SV: OnceLock<Index> = OnceLock::new();
     static FR: OnceLock<Index> = OnceLock::new();
+    static KO: OnceLock<Index> = OnceLock::new();
     let (index, rows) = match language {
         "ja" => (&JA, JAPANESE),
         "zh-hans" => (&HANS, SIMPLIFIED_CHINESE),
@@ -81,6 +85,7 @@ fn catalog(language: &str) -> Option<&'static Index> {
         "es" => (&ES, SPANISH),
         "pl" => (&PL, POLISH),
         "fr" => (&FR, FRENCH),
+        "ko" => (&KO, KOREAN),
         // Georgian also reads its own rows for text the other catalogs don't have yet.
         "ka" => return Some(KA.get_or_init(|| GEORGIAN.iter().chain(GEORGIAN_PANELS).copied().collect())),
         "sv" => (&SV, SWEDISH),
